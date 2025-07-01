@@ -3,14 +3,16 @@
 echo "🚀 Setting up VoiceChatMac..."
 echo ""
 
-# Check if Python 3.11 is installed
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Error: Python 3 is not installed. Please install Python 3.11+ first."
+# Check if Python 3.11 is installed via Homebrew
+PYTHON311_PATH="/opt/homebrew/opt/python@3.11/bin/python3.11"
+if [ ! -f "$PYTHON311_PATH" ]; then
+    echo "❌ Error: Python 3.11 is not installed via Homebrew."
+    echo "💡 Please install it with: brew install python@3.11"
     exit 1
 fi
 
 # Check Python version
-PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_VERSION=$("$PYTHON311_PATH" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
 PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
 
@@ -21,22 +23,13 @@ if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" 
     exit 1
 fi
 
-if [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -gt 11 ]; then
-    echo "⚠️  Warning: You have Python $PYTHON_VERSION, but Kokoro TTS is tested with Python 3.11.x"
-    echo "💡 Consider using Python 3.11.13 for best compatibility"
-    echo "💡 Continue anyway? (y/N)"
-    read -r response
-    if [[ ! "$response" =~ ^[Yy]$ ]]; then
-        echo "Setup cancelled. Please install Python 3.11.13"
-        exit 1
-    fi
-fi
+
 
 echo "✅ Python $PYTHON_VERSION found (compatible with Kokoro)"
 
 # Create virtual environment
 echo "📦 Creating Python virtual environment..."
-python3 -m venv kokoro-venv
+"$PYTHON311_PATH" -m venv kokoro-venv
 
 # Activate virtual environment
 echo "🔧 Activating virtual environment..."
