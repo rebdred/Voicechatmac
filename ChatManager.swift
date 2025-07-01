@@ -298,15 +298,30 @@ class ChatManager: NSObject, ObservableObject {
             guard let self = self else { return }
             let data = handle.availableData
             guard let output = String(data: data, encoding: .utf8) else { return }
-            for line in output.components(separatedBy: .newlines) {
-                if line.hasPrefix("DONE:") {
-                    let file = line.replacingOccurrences(of: "DONE:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard let base = self.ttsCurrentBaseFilename, file.hasPrefix(base) else { continue }
-                    if self.ttsDoneFiles.contains(file) { continue }
+            
+            // Split by newlines and process each line
+            let lines = output.components(separatedBy: .newlines)
+            for line in lines {
+                let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmedLine.isEmpty { continue }
+                
+                if trimmedLine.hasPrefix("DONE:") {
+                    let file = trimmedLine.replacingOccurrences(of: "DONE:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard let base = self.ttsCurrentBaseFilename, file.hasPrefix(base) else { 
+                        print("TTS: Ignoring file \(file) - doesn't match base \(self.ttsCurrentBaseFilename ?? "nil")")
+                        continue 
+                    }
+                    if self.ttsDoneFiles.contains(file) { 
+                        print("TTS: File \(file) already processed")
+                        continue 
+                    }
+                    
                     self.ttsDoneFiles.insert(file)
                     let fileURL = self.tempDirectory.appendingPathComponent(file)
                     self.ttsAudioQueue.append(fileURL)
                     self.ttsExpectedCount += 1
+                    
+                    print("TTS: Queued audio file \(file) (total: \(self.ttsExpectedCount))")
                     
                     // Print timing when first audio chunk is generated
                     if self.ttsExpectedCount == 1 {
@@ -314,9 +329,14 @@ class ChatManager: NSObject, ObservableObject {
                         print("[TIMING] First audio chunk generated at \(audioGenTime), delta: \(audioGenTime.timeIntervalSince(self.ttsStartTime))s")
                     }
                     
+                    // Start playing if this is the first file and nothing is currently playing
                     if self.ttsAudioQueue.count == 1 && (self.audioPlayer == nil || self.audioPlayer?.isPlaying == false) {
+                        print("TTS: Starting playback of first audio chunk")
                         Task { await self.playNextTTSFile() }
                     }
+                } else if !trimmedLine.contains("READY") && !trimmedLine.contains("Using device:") && !trimmedLine.contains("Starting persistent TTS") {
+                    // Log other TTS output for debugging
+                    print("TTS: \(trimmedLine)")
                 }
             }
         }
@@ -324,8 +344,13 @@ class ChatManager: NSObject, ObservableObject {
     
     @MainActor
     private func playNextTTSFile() async {
-        guard !ttsAudioQueue.isEmpty else { return }
+        guard !ttsAudioQueue.isEmpty else { 
+            print("TTS: No more audio files in queue")
+            return 
+        }
         let fileURL = ttsAudioQueue.removeFirst()
+        
+        print("TTS: Playing audio file \(fileURL.lastPathComponent) (queue size: \(ttsAudioQueue.count))")
         
         // Print timing when first chunk starts playing
         if ttsPlayedCount == 0 {
@@ -337,6 +362,7 @@ class ChatManager: NSObject, ObservableObject {
             audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
             audioPlayer?.delegate = self
             audioPlayer?.play()
+            print("TTS: Started playing \(fileURL.lastPathComponent)")
         } catch {
             print("Failed to play TTS audio: \(error)")
             try? FileManager.default.removeItem(at: fileURL)
@@ -434,15 +460,20 @@ extension ChatManager: AVAudioRecorderDelegate {
 extension ChatManager: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         if let lastPlayed = player.url {
+            print("TTS: Finished playing \(lastPlayed.lastPathComponent) (success: \(flag))")
             try? FileManager.default.removeItem(at: lastPlayed)
         }
         ttsPlayedCount += 1
+        print("TTS: Played \(ttsPlayedCount) of \(ttsExpectedCount) audio chunks")
+        
         if !ttsAudioQueue.isEmpty {
+            print("TTS: Queue has \(ttsAudioQueue.count) files remaining, playing next...")
             Task { await playNextTTSFile() }
         } else {
             // All done, cleanup
             let audioFinishTime = Date()
             print("[TIMING] All audio chunks finished playing at \(audioFinishTime), delta: \(audioFinishTime.timeIntervalSince(ttsStartTime))s")
+            print("TTS: All audio chunks completed successfully")
             ttsCurrentBaseFilename = nil
             ttsExpectedCount = 0
             ttsPlayedCount = 0
