@@ -1,0 +1,43 @@
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+.build/
+*.o
+*.pyc
+__pycache__/
+
+# Temporary files
+*.wav
+*.m4a
+screenshot_*.jpg
+recording.m4a
+
+# Python virtual environment
+kokoro-venv/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Configuration files with sensitive data
+config.txt 
