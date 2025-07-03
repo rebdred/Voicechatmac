@@ -102,9 +102,16 @@ cp .build/arm64-apple-macosx/debug/VoiceChatApp .
 - `kokoro-venv/` - Python virtual environment
 
 ### Configuration
+- `config.txt` - API key, model selection, prompt customization, TTS speed
 - `Package.swift` - Swift Package Manager configuration
 - `Info.plist` - App permissions and configuration
 - `.gitignore` - Excludes build artifacts and temp files
+
+### Configuration Options (`config.txt`)
+- `GEMINI_API_KEY` - Your Google Gemini API key
+- `GEMINI_MODEL` - Model to use (e.g., `gemini-2.5-flash`, `gemini-1.5-flash`, `gemini-1.5-pro`)
+- `GEMINI_PROMPT` - Custom prompt for AI responses
+- `TTS_SPEED` - Text-to-speech playback speed (1.0 = normal, 1.5 = 50% faster)
 
 ## 🔧 Technical Details
 
@@ -115,7 +122,7 @@ cp .build/arm64-apple-macosx/debug/VoiceChatApp .
 
 
 ### API Integration
-- **Model**: `gemini-2.5-flash`
+- **Model**: Configurable via `GEMINI_MODEL` in config.txt (default: `gemini-2.5-flash`)
 - **Features**: Audio input, screenshot context, conversation history
 - **Response Limit**: 4000 tokens (optimized for voice responses)
 

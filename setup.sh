@@ -60,6 +60,10 @@ cat > config.txt << 'EOF'
 # Visit: https://makersuite.google.com/app/apikey
 GEMINI_API_KEY=your_api_key_here
 
+# Gemini Model Configuration
+# The model to use for generating responses (e.g., gemini-2.5-flash, gemini-1.5-flash, gemini-1.5-pro)
+GEMINI_MODEL=gemini-2.5-flash
+
 # Gemini Prompt Configuration
 # This prompt is sent to Gemini along with the audio and screenshot
 # You can customize this to change how the AI responds

@@ -4,17 +4,21 @@ class GeminiAPI {
     private let apiKey: String
     private let prompt: String
     let ttsSpeed: String
-    private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash"
+    private let model: String
+    private var baseURL: String {
+        return "https://generativelanguage.googleapis.com/v1beta/models/\(model)"
+    }
     
     init() {
-        // Load API key, prompt, and TTS speed from config file
+        // Load API key, prompt, TTS speed, and model from config file
         let config = GeminiAPI.loadConfig()
         self.apiKey = config.apiKey
         self.prompt = config.prompt
         self.ttsSpeed = config.ttsSpeed
+        self.model = config.model
     }
     
-    private static func loadConfig() -> (apiKey: String, prompt: String, ttsSpeed: String) {
+    private static func loadConfig() -> (apiKey: String, prompt: String, ttsSpeed: String, model: String) {
         // Get the binary directory to find config.txt
         let binaryPath = CommandLine.arguments[0]
         let binaryDirectory = URL(fileURLWithPath: binaryPath).deletingLastPathComponent()
@@ -23,6 +27,7 @@ class GeminiAPI {
         var apiKey = ""
         var prompt = "Given the following voice message and screenshot, respond appropriately. Keep the response short and conversational. If the user asks for a breakdown, go deeper, but not more than 200 words."
         var ttsSpeed = "1.3"
+        var model = "gemini-2.5-flash"
         
         do {
             let configContent = try String(contentsOf: configURL, encoding: .utf8)
@@ -45,6 +50,11 @@ class GeminiAPI {
                     if !speed.isEmpty {
                         ttsSpeed = speed
                     }
+                } else if trimmedLine.hasPrefix("GEMINI_MODEL=") {
+                    let modelName = String(trimmedLine.dropFirst("GEMINI_MODEL=".count))
+                    if !modelName.isEmpty {
+                        model = modelName
+                    }
                 }
             }
             
@@ -58,7 +68,7 @@ class GeminiAPI {
             print("[GeminiAPI] Make sure config.txt exists in the same directory as the app")
         }
         
-        return (apiKey, prompt, ttsSpeed)
+        return (apiKey, prompt, ttsSpeed, model)
     }
     
     func sendAudioAndScreenshot(audioData: Data, screenshotData: Data?, conversationHistory: [ChatMessage] = []) async -> String? {
