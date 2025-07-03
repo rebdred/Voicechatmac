@@ -34,7 +34,7 @@ It's a Linux binary, which works alright, but opens up a Terminal window on star
 
 ### 1. Clone and Navigate
 ```bash
-git clone <repository-url>
+git clone https://github.com/rebdred/Voicechatmac
 cd Voicechatmac
 ```
 
