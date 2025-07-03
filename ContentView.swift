@@ -28,23 +28,28 @@ struct ContentView: View {
             .background(Color.gray.opacity(0.1))
             .cornerRadius(12)
             
-            // Start/Stop button
+            // Start/Stop button (icon only)
             Button(action: {
                 chatManager.isRecording ? chatManager.stopChat() : chatManager.startChat()
             }) {
-                HStack {
-                    Image(systemName: chatManager.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.title2)
-                    Text(chatManager.isRecording ? "Stop Chat" : "Start Chat")
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.white)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(chatManager.isRecording ? Color.red : Color.blue)
-                .cornerRadius(12)
+                Image(systemName: chatManager.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                    .font(.title2)
             }
+            .foregroundColor(.white)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(chatManager.isRecording ? Color.red : Color.blue)
+            .cornerRadius(12)
             .buttonStyle(PlainButtonStyle())
+            
+            // Hotkey note at the bottom
+            HStack {
+                Spacer()
+                Text("⌃⌥⌘R to read any selection")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
         }
         .padding(20)
         .frame(width: 300, height: 400)  // window size
@@ -54,6 +59,9 @@ struct ContentView: View {
                 .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .onAppear {
+            chatManager.enableReadSelectionHotkey()
+        }
     }
 }
 

@@ -3,6 +3,7 @@ import AVFoundation
 import SwiftUI
 import CoreGraphics
 import AppKit
+import Carbon // For hotkey registration
 
 struct ChatMessage: Identifiable {
     let id = UUID()
@@ -39,16 +40,92 @@ class ChatManager: NSObject, ObservableObject {
     private var ttsDoneFiles: Set<String> = []
     private var ttsStartTime: Date = Date()
     
+    private var hotKeyRef: EventHotKeyRef? = nil
+    private var hotKeyEnabled = false
+    
+    // MARK: - Hotkey Registration
+    public func enableReadSelectionHotkey() {
+        guard !hotKeyEnabled else { return }
+        hotKeyEnabled = true
+        // Register Ctrl+Option+Cmd+R (keycode 15 for 'R')
+        let hotKeyID = EventHotKeyID(signature: OSType(UInt32(truncatingIfNeeded: 0x52454144)), id: 1) // 'READ'
+        let modifierFlags: UInt32 = UInt32(controlKey | optionKey | cmdKey)
+        let keyCode: UInt32 = 15 // 'R'
+        let status = RegisterEventHotKey(keyCode, modifierFlags, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        if status == noErr {
+            print("[Hotkey] Registered global hotkey for Read Selection")
+            // Install handler
+            InstallEventHandler(GetApplicationEventTarget(), { (nextHandler, event, userData) -> OSStatus in
+                var hkID = EventHotKeyID()
+                GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hkID)
+                if hkID.signature == OSType(UInt32(truncatingIfNeeded: 0x52454144)) && hkID.id == 1 {
+                    // Call static handler
+                    ChatManager.handleReadSelectionHotkey()
+                }
+                return noErr
+            }, 1, [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))], nil, nil)
+        } else {
+            print("[Hotkey] Failed to register global hotkey")
+        }
+    }
+    
+    public func disableReadSelectionHotkey() {
+        if let ref = hotKeyRef {
+            UnregisterEventHotKey(ref)
+            hotKeyRef = nil
+            hotKeyEnabled = false
+            print("[Hotkey] Unregistered global hotkey")
+        }
+    }
+    
+    // MARK: - Hotkey Handler
+    private static weak var sharedInstance: ChatManager? = nil
     override init() {
         super.init()
         // Ensure temp directory exists
         try? FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true, attributes: nil)
         setupPersistentTTS()
+        ChatManager.sharedInstance = self
     }
     
-    deinit {
-        // Clean up persistent TTS process
-        ttsProcess?.terminate()
+    private static func handleReadSelectionHotkey() {
+        DispatchQueue.main.async {
+            ChatManager.sharedInstance?.readSelectedTextWithKokoro()
+        }
+    }
+    
+    // MARK: - Read Selected Text Logic
+    private func readSelectedTextWithKokoro() {
+        // Save current clipboard string
+        let pb = NSPasteboard.general
+        let oldString = pb.string(forType: .string)
+        // Simulate Cmd+C
+        let src = CGEventSource(stateID: .combinedSessionState)
+        let vDown = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: true) // Cmd
+        let vUp = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: false)
+        let cDown = CGEvent(keyboardEventSource: src, virtualKey: 8, keyDown: true) // C
+        let cUp = CGEvent(keyboardEventSource: src, virtualKey: 8, keyDown: false)
+        vDown?.flags = .maskCommand
+        cDown?.flags = .maskCommand
+        vDown?.post(tap: .cghidEventTap)
+        cDown?.post(tap: .cghidEventTap)
+        cUp?.post(tap: .cghidEventTap)
+        vUp?.post(tap: .cghidEventTap)
+        // Wait for clipboard update
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            let text = pb.string(forType: .string) ?? ""
+            // Restore clipboard string
+            pb.clearContents()
+            if let oldString = oldString {
+                pb.setString(oldString, forType: .string)
+            }
+            if !text.isEmpty {
+                print("[Hotkey] Read selection: \(text.prefix(100))...")
+                self.speakWithKokoro(text: text, geminiResponseTime: Date())
+            } else {
+                print("[Hotkey] No text selected or failed to copy selection.")
+            }
+        }
     }
     
     private func setupPersistentTTS() {

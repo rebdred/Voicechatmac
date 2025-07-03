@@ -86,6 +86,7 @@ cp .build/arm64-apple-macosx/debug/VoiceChatApp .
 4. **Click "Stop Chat"** to end recording and send to Gemini
 5. **Listen** to the AI response (automatically played back)
 
+Bonus: Press **Ctrl+Option+Cmd+R** to instantly read any selected text aloud using Kokoro TTS.
 
 ## 📁 Project Structure
 
