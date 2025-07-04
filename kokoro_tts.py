@@ -16,7 +16,7 @@ filename = sys.argv[4] if len(sys.argv) > 4 else 'output.wav'  # Default filenam
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
 print(f"Using device: {device}")
 
-pipeline = KPipeline(lang_code='a')
+pipeline = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
 # Move model to MPS device for acceleration
 if hasattr(pipeline, 'model') and pipeline.model is not None:
     pipeline.model = pipeline.model.to(device)

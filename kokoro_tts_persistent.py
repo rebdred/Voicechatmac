@@ -38,7 +38,7 @@ print(f"Starting persistent TTS with voice: {voice}, speed: {speed}")
 print("READY", flush=True)  # Signal that we're ready to receive text
 
 # Load the pipeline once with device specification
-pipeline = KPipeline(lang_code='a')
+pipeline = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
 # Move model to MPS device for acceleration
 if hasattr(pipeline, 'model') and pipeline.model is not None:
     pipeline.model = pipeline.model.to(device)
