@@ -547,14 +547,22 @@ extension ChatManager: AVAudioPlayerDelegate {
             print("TTS: Queue has \(ttsAudioQueue.count) files remaining, playing next...")
             Task { await playNextTTSFile() }
         } else {
-            // All done, cleanup
+            // All done, cleanup - but wait a bit for any additional files that might still be generated
             let audioFinishTime = Date()
             print("[TIMING] All audio chunks finished playing at \(audioFinishTime), delta: \(audioFinishTime.timeIntervalSince(ttsStartTime))s")
             print("TTS: All audio chunks completed successfully")
-            ttsCurrentBaseFilename = nil
-            ttsExpectedCount = 0
-            ttsPlayedCount = 0
-            ttsDoneFiles.removeAll()
+            
+            // Wait a bit before cleaning up to allow for any additional files
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // Only cleanup if we're still in the same TTS session
+                if self.ttsCurrentBaseFilename != nil {
+                    print("TTS: Final cleanup after delay")
+                    self.ttsCurrentBaseFilename = nil
+                    self.ttsExpectedCount = 0
+                    self.ttsPlayedCount = 0
+                    self.ttsDoneFiles.removeAll()
+                }
+            }
         }
     }
 } 

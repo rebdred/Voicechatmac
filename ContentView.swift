@@ -28,19 +28,19 @@ struct ContentView: View {
             .background(Color.gray.opacity(0.1))
             .cornerRadius(12)
             
-            // Start/Stop button (icon only)
-            Button(action: {
-                chatManager.isRecording ? chatManager.stopChat() : chatManager.startChat()
-            }) {
+            // Start/Stop button (custom ZStack implementation)
+            ZStack {
                 Image(systemName: chatManager.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                     .font(.title2)
+                    .foregroundColor(.white)
             }
-            .foregroundColor(.white)
-            .padding()
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
             .background(chatManager.isRecording ? Color.red : Color.blue)
             .cornerRadius(12)
-            .buttonStyle(PlainButtonStyle())
+            .onTapGesture {
+                chatManager.isRecording ? chatManager.stopChat() : chatManager.startChat()
+            }
             
             // Hotkey note at the bottom
             HStack {

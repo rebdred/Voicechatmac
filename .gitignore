@@ -1,0 +1,11 @@
+.DS_Store
+.build/
+VoiceChatApp
+config.txt
+kokoro-venv/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/
+DerivedData/
+.swiftpm/ 
